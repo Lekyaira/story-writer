@@ -1,38 +1,21 @@
 #[derive(Debug, Clone)]
 pub struct Story {
-    major_characters: Vec<u16>,
     characters: Vec<Character>,
-    locations: Vec<Location>,
-    events: Vec<Event>,
+    setting: Setting,
     plot: Plot,
     chapters: Vec<Chapter>,
 }
 
-#[derive(Debug, Clone)]
-pub struct MajorCharacter {
-
-}
-impl MajorCharacter {
-    pub fn new(character: Character, mut story: &mut Story) -> Self {
-        let mut id: Option<u16> = None;
-        if story.characters.iter().any(|c| c.name == character.name) {
-            id = Some(story.characters.iter().position(|c| c.name == character.name).unwrap() as u16);
-        } else {
-            id = Some(story.characters.len() as u16);
-            story.characters.push(character);
-        }
-        Self { id }
-    }
-
-    pub fn get(story: &Story) -> Character {
-        story.characters[self.id]
+impl Story {
+    pub fn get_major_characters(&self) -> Vec<Character> {
+        self.characters.iter().filter(|c| c.major).collect()
     }
 }
-    
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, HasId)]
 pub struct Character {
-    id: u16,
+    id: String,
+    major: bool,
     name: String,
     description: String,
     backstory: String,
@@ -46,4 +29,49 @@ pub struct Character {
 pub struct Relationship {
     character: Character,
     relationship: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct Setting {
+    features: Vec<String>,
+    locations: Vec<Location>,
+    events: Vec<Event>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Plot {
+    events: Vec<PlotEvent>,
+}
+
+#[derive(Debug, Clone)]
+pub struct PlotEvent {
+    description: String,
+    reasoning: String,
+    event: Option<Event>,
+    sub_events: Vec<PlotEvent>,
+}
+
+#[derive(Debug, Clone, HasId)]
+pub struct Event {
+    id: String,
+    description: String,
+    characters: Vec<String>,
+    locations: Vec<String>,
+    time: String,
+    consequences: Vec<String>,
+}
+
+#[derive(Debug, Clone, HasId)]
+pub struct Location {
+    id: String,
+    name: String,
+    description: String,
+    details: Vec<String>,
+}
+
+#[derive(Debug, Clone)]
+pub struct Chapter {
+    title: String,
+    short_description: String,
+    text: String,
 }

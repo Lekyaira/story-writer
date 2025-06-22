@@ -1,3 +1,7 @@
+mod config;
+mod ollama_client;
+mod repl;
+mod cli;
 pub mod id;
 pub mod db;
-// ... existing code ... 
+pub mod story;

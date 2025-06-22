@@ -1,7 +1,3 @@
-mod config;
-mod ollama_client;
-mod repl;
-mod cli;
 use cli::Cli;
 
 #[tokio::main]

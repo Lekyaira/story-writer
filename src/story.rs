@@ -172,3 +172,4 @@ pub struct TimelineEvent {
 }
 
 // TODO: Create a draft->reviewed->final workflow for the story
+// TODO: Functionaly to analyze text (story piece, finished story, idea draft, etc.) and create a continuation

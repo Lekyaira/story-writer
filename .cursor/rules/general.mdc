@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+---
+description: General Agent Rules
+globs: 
+alwaysApply: true
+---
+
+- Use existing code whenever possible. *Always* prefer using an existing function over creating a new function if the existing function does what is needed. **Always** search for existing functions before writing a new one.
+- When asked to implement new code, **always** check that the instructions are clear and sensible before implementing. If you have any questions or instructions are unclear, **STOP** and ask clarifying questions. Otherwise, begin implementation.
+- When adding a new crate to the project, prefer adding using `cargo add <crate>`, rather than by editing the `Cargo.toml` file.

@@ -1,7 +1,3 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -22,7 +18,7 @@ use syn::{parse_macro_input, DeriveInput};
 pub fn derive_has_id(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let name = &input.ident;
-    let gen = quote! {
+    let output = quote! {
         impl HasId for #name {
             fn id(&self) -> &str {
                 &self.id
@@ -38,5 +34,5 @@ pub fn derive_has_id(input: TokenStream) -> TokenStream {
             }
         }
     };
-    gen.into()
+    output.into()
 }

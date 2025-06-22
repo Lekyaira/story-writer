@@ -53,4 +53,11 @@ impl OllamaClient {
             }
         }
     }
+
+    /// Send a prompt and get a response from the model.
+    pub async fn get_response(&mut self, prompt: String) -> String {
+        let req = ChatMessageRequest::new(self.model.clone(), vec![ChatMessage::user(prompt)]);
+        let resp = self.inner.send_chat_messages(req).await.unwrap();
+        resp.message.content
+    }
 }

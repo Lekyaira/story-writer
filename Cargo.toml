@@ -16,6 +16,7 @@ sha2 = "0.10"
 serde = { version = "1.0", features = ["derive"] }
 id_derive = { path = "id_derive" }
 rusqlite = { version = "0.31", features = ["bundled"] }
+regex = "1.10"
 
 [dev-dependencies]
 assert_cmd = "2.0"

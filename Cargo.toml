@@ -10,6 +10,11 @@ tokio = "1.45.1"
 rustyline = "12.0.0"
 ansi_term = "0.12.1"
 tokio-stream = "0.1"
+clap = "4.5.40"
+uuid = { version = "1.8", features = ["v4"] }
+sha2 = "0.10"
+serde = { version = "1.0", features = ["derive"] }
+id_derive = { path = "id_derive" }
 
 [dev-dependencies]
 assert_cmd = "2.0"

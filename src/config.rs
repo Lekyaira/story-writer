@@ -18,6 +18,29 @@ impl Config {
         Ok(Self { host, port, model })
     }
 
+    /// Load configuration, allowing CLI overrides for host, port, and model.
+    pub fn load_with_overrides(host: Option<String>, port: Option<u16>, model: Option<String>) -> Self {
+        dotenvy::dotenv().ok();
+        let host = host.or_else(|| env::var("OLLAMA_HOST").ok())
+            .unwrap_or_else(|| Self::exit_with_msg("OLLAMA_HOST"));
+        let port = port.or_else(|| env::var("OLLAMA_PORT").ok().and_then(|p| p.parse().ok()))
+            .unwrap_or_else(|| Self::exit_with_msg("OLLAMA_PORT"));
+        let model = model.or_else(|| env::var("OLLAMA_MODEL").ok())
+            .unwrap_or_else(|| Self::exit_with_msg("OLLAMA_MODEL"));
+        Self { host, port, model }
+    }
+
+    fn exit_with_msg(var: &str) -> ! {
+        use ansi_term::Colour::Red;
+        eprintln!(
+            "{}",
+            Red.paint(format!(
+                "Missing or invalid configuration. Set {var} via CLI or environment variable."
+            ))
+        );
+        std::process::exit(1);
+    }
+
     /// Load the configuration or print a helpful message and exit on failure.
     pub fn load_or_exit() -> Self {
         match Self::load() {

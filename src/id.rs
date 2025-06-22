@@ -1,4 +1,5 @@
-use serde::{Serialize, Deserialize};
+extern crate id_derive;
+use serde::Serialize;
 use sha2::{Digest, Sha256};
 use uuid::Uuid;
 

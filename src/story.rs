@@ -1,3 +1,6 @@
+use id_derive::HasId;
+use serde::Serialize;
+
 #[derive(Debug, Clone)]
 pub struct Story {
     title: String,
@@ -20,11 +23,11 @@ pub struct Story {
 
 impl Story {
     pub fn get_major_characters(&self) -> Vec<Character> {
-        self.characters.iter().filter(|c| c.major).collect()
+        self.characters.iter().filter(|c| c.major).cloned().collect()
     }
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Character {
     id: String,
     major: bool,
@@ -44,10 +47,10 @@ pub struct Character {
     continuity_notes: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Relationship {
     character_id: String,
-    type: String,
+    relationship_type: String,
     current_status: String,
 }
 
@@ -62,7 +65,7 @@ pub struct Setting {
     glossary: Glossary,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Faction {
     id: String,
     name: String,
@@ -72,7 +75,7 @@ pub struct Faction {
     resources: Vec<String>,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Artifact {
     id: String,
     name: String,
@@ -81,7 +84,7 @@ pub struct Artifact {
     rules: String,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Culture {
     id: String,
     name: String,
@@ -90,7 +93,7 @@ pub struct Culture {
     idioms: String,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Event {
     id: String,
     description: String,
@@ -100,7 +103,7 @@ pub struct Event {
     consequences: Vec<String>,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Location {
     id: String,
     name: String,
@@ -109,7 +112,7 @@ pub struct Location {
     details: Vec<String>,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Chapter {
     id: String,
     title: String,
@@ -117,14 +120,14 @@ pub struct Chapter {
     text: String,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, Serialize)]
 pub struct Plot {
     acts: Vec<Act>,
     timeline: Vec<TimelineEvent>,
     subplots: Vec<Subplot>,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Subplot {
     id: String,
     title: String,
@@ -134,13 +137,7 @@ pub struct Subplot {
     status: String,
 }
 
-#[derive(Debug, Clone, HasId)]
-pub struct TimelineEvent {
-    time: String,
-    event: String,
-}
-
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Act {
     id: String,
     act_number: u16,
@@ -149,7 +146,7 @@ pub struct Act {
     expected_length_chapters: u16,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct Scene {
     id: String,
     act_id: String,
@@ -164,12 +161,15 @@ pub struct Scene {
     text: String,
 }
 
-#[derive(Debug, Clone, HasId)]
+#[derive(Debug, Clone, HasId, Serialize)]
 pub struct TimelineEvent {
     id: String,
     time: String,
     event: String,
 }
+
+#[derive(Debug, Clone)]
+pub struct Glossary {}
 
 // TODO: Create a draft->reviewed->final workflow for the story
 // TODO: Functionaly to analyze text (story piece, finished story, idea draft, etc.) and create a continuation

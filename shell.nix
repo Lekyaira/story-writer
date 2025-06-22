@@ -17,7 +17,8 @@ let
 in
 pkgs.mkShell {
   # Binaries, tools, etc. go here.
-  packages = [
+  packages = with pkgs; [
+	  cargo-edit
   ];
 
   # C/C++ libraries go here.

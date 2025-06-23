@@ -33,7 +33,7 @@ async fn main() {
     // Initialize agent
     let mut agent = agent::Agent::new(client);
 
-    // If there is an idea, use it to generate a story
+    // If there is an idea, use it to generate a story   
     if let Some(idea_contents) = idea_contents {
         match agent.parse_characters(idea_contents).await {
             Ok(characters) => {

@@ -2,6 +2,7 @@ use crate::ollama_client::OllamaClient;
 use regex::Regex;
 use crate::story::Character;
 use serde::Deserialize;
+use crate::id::HasId;
 
 pub struct Agent {
     client: OllamaClient,
@@ -51,7 +52,7 @@ impl Agent {
             "characters": [
                 {
                     "name": "Character Name",
-                    "main": true,
+                    "main_character": true,
                     "physical_description": "Character Physical Description",
                     "backstory_summary": "Character Backstory Summary",
                     "internal_goals": ["Internal Goal 1", "Internal Goal 2"],
@@ -77,7 +78,14 @@ impl Agent {
         let json_start = response.find('{').unwrap_or(0);
         let json_str = &response[json_start..];
         match serde_json::from_str::<CharactersWrapper>(json_str) {
-            Ok(wrapper) => Ok(wrapper.characters),
+            Ok(mut wrapper) => {
+                for character in &mut wrapper.characters {
+                    character.id = character.generate_id();
+                    // DEBUG
+                    println!("id: {}", character.id);
+                }
+                Ok(wrapper.characters)
+            },
             Err(e) => Err(format!("Failed to parse characters JSON: {e}\nResponse: {json_str}")),
         }
     }

@@ -23,35 +23,37 @@ pub struct Story {
 
 impl Story {
     pub fn get_main_characters(&self) -> Vec<Character> {
-        self.characters.iter().filter(|c| c.main).cloned().collect()
+        self.characters.iter().filter(|c| c.main_character).cloned().collect()
     }
 }
 
-#[derive(Debug, Clone, HasId, Serialize, Deserialize)]
+#[derive(Debug, Clone, HasId, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct Character {
-    id: String,
-    main: bool,
-    name: String,
-    physical_description: String,
-    backstory_summary: String,
-    internal_goals: Vec<String>,
-    external_goals: Vec<String>,
-    immediate_goal: String,
-    fears: Vec<String>,
-    motivations: Vec<String>,
-    relationships: Vec<Relationship>,
-    flaws: Vec<String>,
-    virtues: Vec<String>,
-    arc_stage: String,
-    voice_rules: String,
-    continuity_notes: String,
+    pub id: String,
+    pub main_character: bool,
+    pub name: String,
+    pub physical_description: String,
+    pub backstory_summary: String,
+    pub internal_goals: Vec<String>,
+    pub external_goals: Vec<String>,
+    pub immediate_goal: String,
+    pub fears: Vec<String>,
+    pub motivations: Vec<String>,
+    pub relationships: Vec<Relationship>,
+    pub flaws: Vec<String>,
+    pub virtues: Vec<String>,
+    pub arc_stage: String,
+    pub voice_rules: String,
+    pub continuity_notes: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct Relationship {
-    character_id: String,
-    relationship_type: String,
-    current_status: String,
+    pub character_id: String,
+    pub relationship_type: String,
+    pub current_status: String,
 }
 
 #[derive(Debug, Clone)]

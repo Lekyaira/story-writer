@@ -1,5 +1,5 @@
 use id_derive::HasId;
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Clone)]
 pub struct Story {
@@ -22,17 +22,17 @@ pub struct Story {
 }
 
 impl Story {
-    pub fn get_major_characters(&self) -> Vec<Character> {
-        self.characters.iter().filter(|c| c.major).cloned().collect()
+    pub fn get_main_characters(&self) -> Vec<Character> {
+        self.characters.iter().filter(|c| c.main).cloned().collect()
     }
 }
 
-#[derive(Debug, Clone, HasId, Serialize)]
+#[derive(Debug, Clone, HasId, Serialize, Deserialize)]
 pub struct Character {
     id: String,
-    major: bool,
+    main: bool,
     name: String,
-    description: String,
+    physical_description: String,
     backstory_summary: String,
     internal_goals: Vec<String>,
     external_goals: Vec<String>,

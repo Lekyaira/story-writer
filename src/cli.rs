@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::path::PathBuf;
 
 /// CLI arguments for overriding configuration
 #[derive(Parser, Debug)]
@@ -13,4 +14,7 @@ pub struct Cli {
     /// Ollama model (overrides OLLAMA_MODEL)
     #[arg(long)]
     pub model: Option<String>,
+    /// Path to an idea file to load
+    #[arg(long)]
+    pub idea: Option<PathBuf>,
 } 

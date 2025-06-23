@@ -1,6 +1,6 @@
 use crate::ollama_client::OllamaClient;
 use regex::Regex;
-use crate::story::Character;
+use crate::story::{Character, Relationship};
 use serde::Deserialize;
 use crate::id::HasId;
 
@@ -46,7 +46,7 @@ impl Agent {
         - Rules for character voice, tone, and style
         - Notes from the story thus far to maintain consistency and continuity
 
-        List the information in JSON format.
+        List the information in **JSON format only**.
         ## Example Output
         {
             "characters": [
@@ -70,6 +70,7 @@ impl Agent {
         }
         "#;
         let prompt = prompt.replace("{idea_contents}", &idea_contents);
+        println!("Parsing characters...");
         let response = self.action(prompt.to_string()).await;
         #[derive(Deserialize)]
         struct CharactersWrapper {
@@ -77,16 +78,97 @@ impl Agent {
         }
         let json_start = response.find('{').unwrap_or(0);
         let json_str = &response[json_start..];
-        match serde_json::from_str::<CharactersWrapper>(json_str) {
+        let characters = match serde_json::from_str::<CharactersWrapper>(json_str) {
             Ok(mut wrapper) => {
                 for character in &mut wrapper.characters {
                     character.id = character.generate_id();
-                    // DEBUG
-                    println!("id: {}", character.id);
                 }
                 Ok(wrapper.characters)
             },
             Err(e) => Err(format!("Failed to parse characters JSON: {e}\nResponse: {json_str}")),
+        }?;
+        let characters = self.parse_relationships(idea_contents, characters).await?;
+        Ok(characters)
+    }
+
+    pub async fn parse_relationships(&mut self, idea_contents: String, mut characters: Vec<Character>) -> Result<Vec<Character>, String> {
+        let character_data = characters.iter().map(|c| format!("Name: {}\nId: {}\n", c.name.clone(), c.id.clone())).collect::<Vec<_>>().join("\n");
+
+        let prompt = r#"
+        # Story
+        {idea_contents}
+
+        # Characters
+        {character_data}
+        
+        # Instructions
+        For **each** character, determine their relationships with **each other** character, if applicable.
+        For each relationship, provide the following information:
+        - ID of character
+        - ID of character relationship is with
+        - Relationship type
+        - Current status
+
+        List the information in **JSON format only**.
+        ## Example Output
+        {
+            "relationships": [
+                {
+                    "character_id": "ts456neist4654",
+                    "related_character_id": "ier654stne55s",
+                    "relationship_type": "Relationship Type",
+                    "current_status": "Current Status"
+                },
+                {
+                    "character_id": "ier654stne55s",
+                    "related_character_id": "ts456neist4654",
+                    "relationship_type": "Relationship Type",
+                    "current_status": "Current Status"
+                }
+            ]
         }
+        "#;
+        let prompt = prompt.replace("{idea_contents}", &idea_contents);
+        let prompt = prompt.replace("{character_data}", &character_data);
+
+        println!("Prompt: {}", prompt);
+
+        println!("Parsing relationships...");
+        let response = self.action(prompt.to_string()).await;
+        #[derive(Deserialize)   ]
+        struct RelationshipData {
+            character_id: String,
+            related_character_id: String,
+            relationship_type: String,
+            current_status: String,
+        }
+        #[derive(Deserialize)]
+        struct RelationshipsWrapper {
+            relationships: Vec<RelationshipData>,
+        }
+        let json_start = response.find('{').unwrap_or(0);
+        let json_str = &response[json_start..];
+        let relationships = match serde_json::from_str::<RelationshipsWrapper>(json_str) {
+            Ok(wrapper) => {
+                Ok(wrapper.relationships)
+            },
+            Err(e) => Err(format!("Failed to parse relationships JSON: {e}\nResponse: {json_str}")),
+        }?;
+        
+        let characters = characters.iter().map(|c| {
+            // Search RelationshipData for this character ID
+            let mut character = c.clone();
+            for r in &relationships {
+                if r.character_id == c.id {
+                    character.relationships.push(Relationship {
+                        character_id: r.related_character_id.clone(),
+                        relationship_type: r.relationship_type.clone(),
+                        current_status: r.current_status.clone(),
+                    });
+                }
+            }
+            character
+        }).collect::<Vec<_>>();
+        Ok(characters)
     }
 }

@@ -23,7 +23,20 @@ pub struct Story {
 
 impl Story {
     pub fn get_main_characters(&self) -> Vec<Character> {
-        self.characters.iter().filter(|c| c.main_character).cloned().collect()
+        self.characters.iter().filter(|c| c.character_type == CharacterType::Main).cloned().collect()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+pub enum CharacterType {
+    Main,
+    Secondary,
+    #[default]
+    Supporting,
+}
+impl std::fmt::Display for CharacterType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -31,13 +44,13 @@ impl Story {
 #[serde(default)]
 pub struct Character {
     pub id: String,
-    pub main_character: bool,
+    pub character_type: CharacterType,
     pub name: String,
+    pub aliases: Vec<String>,
     pub physical_description: String,
     pub backstory_summary: String,
     pub internal_goals: Vec<String>,
     pub external_goals: Vec<String>,
-    pub immediate_goal: String,
     pub fears: Vec<String>,
     pub motivations: Vec<String>,
     pub relationships: Vec<Relationship>,
@@ -46,6 +59,14 @@ pub struct Character {
     pub arc_stage: String,
     pub voice_rules: String,
     pub continuity_notes: String,
+}
+
+impl Character {
+    pub fn get_names(&self) -> Vec<String> {
+        let mut names = vec![self.name.clone()];
+        names.extend(self.aliases.iter().cloned());
+        names
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

@@ -19,7 +19,7 @@ pub fn read_idea(path: Option<PathBuf>) -> Result<Option<String>, String> {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), String> {
     // Parse CLI arguments
     let cli = Cli::parse();
     let idea_contents = read_idea(cli.idea).unwrap();
@@ -35,18 +35,20 @@ async fn main() {
 
     // If there is an idea, use it to generate a story   
     if let Some(idea_contents) = idea_contents {
-        match agent.parse_characters(idea_contents).await {
-            Ok(characters) => {
-                println!("{}", serde_json::to_string_pretty(&characters).unwrap());
-            },
-            Err(e) => {
-                eprintln!("{e}");
-                std::process::exit(1);
-            }
+        // Pull all characters from the idea
+        println!("Parsing characters...");
+        let mut characters = agent.parse_characters(idea_contents.clone()).await?;
+        // Fill out each character's information
+        for character in characters.iter_mut() {
+            println!("Parsing character: {}", character.name);
+            let filled_character = agent.parse_character(idea_contents.clone(), character.clone()).await?;
+            *character = filled_character;
         }
+        println!("{}", serde_json::to_string_pretty(&characters).unwrap());
     } else {
         // Otherwise, generate a story from scratch
         // TODO: Implement this
         todo!()
     }
+    Ok(())
 }

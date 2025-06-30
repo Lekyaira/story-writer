@@ -69,6 +69,7 @@ impl Agent {
     /// Parse the main characters from the idea contents using the LLM and return a Vec<Character>.
     /// The LLM is expected to return a JSON object with a "characters" array.
     pub async fn parse_character(&mut self, idea_contents: String, mut character: Character) -> Result<Character, String> {
+        // Facts gathering pass
         let prompt = r#"
             You are a CharacterSheet extractor & completer.
 
@@ -79,30 +80,27 @@ impl Agent {
             {character}
 
             ## Task
-            1. Gather evidence about this character **from the excerpt OR your genre intuition**.
-            2. Fill EVERY key in the schema.  
-            • If evidence is missing, infer a plausible value.  
-            • If genuinely unknowable, write "" or [].
+            - Gather evidence about this character from the story.
+            - If evidence is missing, leave the field blank.
 
             Think step-by-step *internally*, then output only valid JSON.
 
-            ## Example Output
+            ## Output Schema
             {
                 "id": "{character_id}",
                 "name": "{character_name}",
-                "aliases": ["..."],
+                "aliases": ["{aliases}"],
                 "character_type": "{character_type}",
                 "physical_description": "If unknown, infer a brief visual consistent with genre.",
-                "backstory_summary": "One-sentence past or inferred background.",
-                "internal_goals": ["Emotional or psychological wants"],
-                "external_goals": ["Concrete, plot-facing wants"],
-                "fears": ["", ...],
-                "motivations": ["", ...],
-                "flaws": ["", ...],
-                "virtues": ["", ...],
-                "arc_stage": "Setup | Rising | Crisis | Resolution",
+                "backstory_summary": "One-sentence past or background.",
+                "internal_goals": "Emotional or psychological wants",
+                "external_goals": "Concrete, plot-facing wants",
+                "fears": "Fears that drive the character or might prevent them from achieving their goals",
+                "flaws": "Negative personality traits, separated by commas",
+                "virtues": "Positive personality traits, separated by commas",
+                "arc_stage": "<Setup | Rising | Crisis | Resolution>",
                 "voice_rules": "Lexical quirks, tone hints",
-                "continuity_notes": "Facts already on page; cite line numbers when possible"
+                "continuity_notes": "Important facts from the story to keep in mind for consistency"
             }
         "#;
         let prompt = prompt.replace("{idea_contents}", &idea_contents);
@@ -112,13 +110,66 @@ impl Agent {
         let prompt = prompt.replace("{character_id}", &character.id);
         let prompt = prompt.replace("{character_name}", &character.name);
         let prompt = prompt.replace("{character_type}", &character.character_type.to_string());
+        let prompt = prompt.replace("{aliases}", &character.aliases.join(", "));
         let response = self.action(prompt.to_string()).await;
         let json_start = response.find('{').unwrap_or(0);
         let json_str = &response[json_start..];
-        let character = match serde_json::from_str::<Character>(json_str) {
+        let mut character = match serde_json::from_str::<Character>(json_str) {
             Ok(character) => Ok(character),
             Err(e) => Err(format!("Failed to parse character JSON: {e}\nResponse: {json_str}")),
         }?;
+
+        // Embellishment pass
+        let prompt = r#"
+        You are a CharacterSheet extractor & completer.
+
+            # Story
+            {idea_contents}
+
+            # Character (canonical data from DB)
+            {character}
+
+            ## Task
+            - Use the information from the story, plus the facts gathered about this character, then complete the missing information plausibly.
+            - Infer missing information based on the character's data, story themes and genre, and your own intuition.
+            - Embellish the character's data to make them more consistent, interesting and engaging.
+
+            Think step-by-step *internally*, then output only valid JSON.
+
+            ## Output Schema
+            {
+                "id": "{character_id}",
+                "name": "{character_name}",
+                "aliases": ["{aliases}"],
+                "character_type": "{character_type}",
+                "physical_description": "If unknown, infer a brief visual consistent with genre.",
+                "backstory_summary": "One-sentence past or background.",
+                "internal_goals": "Emotional or psychological wants",
+                "external_goals": "Concrete, plot-facing wants",
+                "fears": "Fears that drive the character or might prevent them from achieving their goals",
+                "flaws": "Negative personality traits, separated by commas",
+                "virtues": "Positive personality traits, separated by commas",
+                "arc_stage": "<Setup | Rising | Crisis | Resolution>",
+                "voice_rules": "Lexical quirks, tone hints",
+                "continuity_notes": "Important facts from the story to keep in mind for consistency"
+            }
+        "#;
+        let prompt = prompt.replace("{idea_contents}", &idea_contents);
+        let character_json = serde_json::to_string(&character).unwrap();
+        let prompt = prompt.replace("{character}", &character_json);
+        let prompt = prompt.replace("{character_id}", &character.id);
+        let prompt = prompt.replace("{character_name}", &character.name);
+        let prompt = prompt.replace("{character_type}", &character.character_type.to_string());
+        let prompt = prompt.replace("{aliases}", &character.aliases.join(", "));
+        println!("Embellishing character: {}", character.name);
+        let response = self.action(prompt.to_string()).await;
+        let json_start = response.find('{').unwrap_or(0);
+        let json_str = &response[json_start..];
+        let mut character = match serde_json::from_str::<Character>(json_str) {
+            Ok(character) => Ok(character),
+            Err(e) => Err(format!("Failed to parse character JSON: {e}\nResponse: {json_str}")),
+        }?;
+
         Ok(character)
     }
 

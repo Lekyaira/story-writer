@@ -38,6 +38,10 @@ async fn main() -> Result<(), String> {
         // Pull all characters from the idea
         println!("Parsing characters...");
         let mut characters = agent.parse_characters(idea_contents.clone()).await?;
+        println!("Found the following characters:");
+        for character in characters.iter() {
+            println!("\t{}", character.name);
+        }
         // Fill out each character's information
         for character in characters.iter_mut() {
             println!("Parsing character: {}", character.name);

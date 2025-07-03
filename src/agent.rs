@@ -1,7 +1,7 @@
 use crate::ollama_client::OllamaClient;
 use regex::Regex;
 use crate::story::{Character, Relationship};
-use serde::Deserialize;
+use serde::{ Deserialize, de::DeserializeOwned };
 use uuid::Uuid;
 
 pub struct Agent {
@@ -20,7 +20,27 @@ impl Agent {
         let re = Regex::new(r"<think>[\s\S]*?</think>").unwrap();
         let filtered = re.replace_all(&response, "");
         filtered.trim().to_string()
-    } 
+    }
+
+    pub async fn parse<T: DeserializeOwned>(&mut self, prompt: &str, attempts: u32, params: &[(&str, &str)]) -> Result<T, String> {
+        let mut prompt = params.iter().fold(prompt.to_string(), |acc, (key, value)| acc.replace(key, value));
+        let mut error_message = String::new();
+        for i in 0..attempts {
+            let response = self.action(prompt.clone()).await;
+            let json_start = response.find('{').unwrap_or(0);
+            let json_str = &response[json_start..];
+            let result = serde_json::from_str::<T>(json_str);
+            match result {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    prompt = format!("{prompt}\n\n{response}\n\nError parsing JSON: {e}");
+                    error_message = format!("{e}");
+                    println!("Error parsing JSON in attempt {i}: {response}\n\nError: {e}");
+                },
+            }
+        }
+        Err(format!("Failed to parse JSON after {attempts} attempts: Error parsing JSON: {error_message}"))
+    }
 
     pub async fn parse_characters(&mut self, idea_contents: String) -> Result<Vec<Character>, String> {
         let prompt = r#"
@@ -47,18 +67,16 @@ impl Agent {
             ]
         }
         "#;
-        let prompt = prompt.replace("{idea_contents}", &idea_contents);
-        let response = self.action(prompt.to_string()).await;
+
         #[derive(Deserialize)]
         struct CharactersWrapper {
             characters: Vec<Character>,
         }
-        let json_start = response.find('{').unwrap_or(0);
-        let json_str = &response[json_start..];
-        let mut characters = match serde_json::from_str::<CharactersWrapper>(json_str) {
+        let mut characters = match self.parse::<CharactersWrapper>(prompt, 3, &[("{idea_contents}", &idea_contents)]).await {
             Ok(wrapper) => Ok(wrapper.characters),
-            Err(e) => Err(format!("Failed to parse characters JSON: {e}\nResponse: {json_str}")),
+            Err(e) => Err(format!("{e}\n")),
         }?;
+
         // Generate IDs for the characters
         for character in &mut characters {
             character.id = Uuid::new_v4().to_string();
@@ -83,7 +101,8 @@ impl Agent {
             - Gather evidence about this character from the story.
             - If evidence is missing, leave the field blank.
 
-            Think step-by-step *internally*, then output only valid JSON.
+            Think step-by-step *internally*, then output only **valid JSON**.
+            Follow the output schema exactly.
 
             ## Output Schema
             {
@@ -103,20 +122,12 @@ impl Agent {
                 "continuity_notes": "Important facts from the story to keep in mind for consistency"
             }
         "#;
-        let prompt = prompt.replace("{idea_contents}", &idea_contents);
-        // Deserialize the character to json
+
         let character_json = serde_json::to_string(&character).unwrap();
-        let prompt = prompt.replace("{character}", &character_json);
-        let prompt = prompt.replace("{character_id}", &character.id);
-        let prompt = prompt.replace("{character_name}", &character.name);
-        let prompt = prompt.replace("{character_type}", &character.character_type.to_string());
-        let prompt = prompt.replace("{aliases}", &character.aliases.join(", "));
-        let response = self.action(prompt.to_string()).await;
-        let json_start = response.find('{').unwrap_or(0);
-        let json_str = &response[json_start..];
-        let mut character = match serde_json::from_str::<Character>(json_str) {
+        
+        let mut character = match self.parse::<Character>(prompt, 3, &[("{idea_contents}", &idea_contents), ("{character}", &character_json)]).await {
             Ok(character) => Ok(character),
-            Err(e) => Err(format!("Failed to parse character JSON: {e}\nResponse: {json_str}")),
+            Err(e) => Err(format!("{e}\n")),
         }?;
 
         // Embellishment pass
@@ -134,7 +145,8 @@ impl Agent {
             - Infer missing information based on the character's data, story themes and genre, and your own intuition.
             - Embellish the character's data to make them more consistent, interesting and engaging.
 
-            Think step-by-step *internally*, then output only valid JSON.
+            Think step-by-step *internally*, then output only **valid JSON**.
+            Follow the output schema exactly.
 
             ## Output Schema
             {
@@ -154,20 +166,10 @@ impl Agent {
                 "continuity_notes": "Important facts from the story to keep in mind for consistency"
             }
         "#;
-        let prompt = prompt.replace("{idea_contents}", &idea_contents);
-        let character_json = serde_json::to_string(&character).unwrap();
-        let prompt = prompt.replace("{character}", &character_json);
-        let prompt = prompt.replace("{character_id}", &character.id);
-        let prompt = prompt.replace("{character_name}", &character.name);
-        let prompt = prompt.replace("{character_type}", &character.character_type.to_string());
-        let prompt = prompt.replace("{aliases}", &character.aliases.join(", "));
-        println!("Embellishing character: {}", character.name);
-        let response = self.action(prompt.to_string()).await;
-        let json_start = response.find('{').unwrap_or(0);
-        let json_str = &response[json_start..];
-        let mut character = match serde_json::from_str::<Character>(json_str) {
+        
+        let mut character = match self.parse::<Character>(prompt, 3, &[("{idea_contents}", &idea_contents), ("{character}", &character_json)]).await {
             Ok(character) => Ok(character),
-            Err(e) => Err(format!("Failed to parse character JSON: {e}\nResponse: {json_str}")),
+            Err(e) => Err(format!("{e}\n")),
         }?;
 
         Ok(character)

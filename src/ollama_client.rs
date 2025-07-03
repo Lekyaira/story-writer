@@ -1,7 +1,7 @@
 use ansi_term::Colour::Red;
 use ollama_rs::Ollama;
 use ollama_rs::generation::chat::{ChatMessage, request::ChatMessageRequest};
-use tokio_stream::StreamExt;
+use tokio_stream::{Stream, StreamExt};
 
 pub struct OllamaClient {
     inner: Ollama,
@@ -59,5 +59,38 @@ impl OllamaClient {
         let req = ChatMessageRequest::new(self.model.clone(), vec![ChatMessage::user(prompt)]);
         let resp = self.inner.send_chat_messages(req).await.unwrap();
         resp.message.content
+    }
+
+    /// Send a prompt and stream the model response.
+    pub async fn get_response_stream(&mut self, prompt: String) -> String {
+        let req = ChatMessageRequest::new(self.model.clone(), vec![ChatMessage::user(prompt)]);
+        let mut response_str = String::new();
+        let mut thinking = false;
+        match self.inner.send_chat_messages_stream(req).await {
+            Ok(mut stream) => {
+                while let Some(chunk) = stream.next().await {
+                    if let Ok(resp) = chunk {
+                        if resp.message.content.contains("<think>") {
+                            thinking = true;
+                        } else if resp.message.content.contains("</think>") {
+                            thinking = false;
+                            println!("");
+                        }
+                        if thinking {
+                            print!("{}", resp.message.content);
+                        } else {
+                            response_str += &resp.message.content;
+                        }
+                    }
+                }
+            },
+            Err(e) => {
+                eprintln!(
+                    "{}",
+                    Red.paint(format!("Failed to communicate with Ollama: {e}"))
+                );
+            }
+        }
+        response_str
     }
 }

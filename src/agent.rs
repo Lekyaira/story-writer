@@ -22,11 +22,16 @@ impl Agent {
         filtered.trim().to_string()
     }
 
+    pub async fn action_stream(&mut self, prompt: String) -> String {
+        let response = self.client.get_response_stream(prompt).await;
+        response
+    }
+
     pub async fn parse<T: DeserializeOwned>(&mut self, prompt: &str, attempts: u32, params: &[(&str, &str)]) -> Result<T, String> {
         let mut prompt = params.iter().fold(prompt.to_string(), |acc, (key, value)| acc.replace(key, value));
         let mut error_message = String::new();
         for i in 0..attempts {
-            let response = self.action(prompt.clone()).await;
+            let response = self.action_stream(prompt.clone()).await;
             let json_start = response.find('{').unwrap_or(0);
             let json_str = &response[json_start..];
             let result = serde_json::from_str::<T>(json_str);

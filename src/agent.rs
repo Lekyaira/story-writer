@@ -46,7 +46,7 @@ impl Agent {
         }
         Err(format!("Failed to parse JSON after {attempts} attempts: Error parsing JSON: {error_message}"))
     }
-
+// TODO: Re-implement arrays in schema.
     pub async fn parse_characters(&mut self, idea_contents: String) -> Result<Vec<Character>, String> {
         let prompt = r#"
         You are a structured-data extractor.

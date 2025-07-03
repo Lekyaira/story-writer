@@ -3,18 +3,22 @@ use ollama_rs::Ollama;
 use ollama_rs::generation::chat::{ChatMessage, request::ChatMessageRequest};
 use tokio_stream::{Stream, StreamExt};
 
+// TODO: Coerce model into reasoning using chain of thought if not a reasoning model.
+
 pub struct OllamaClient {
     inner: Ollama,
     model: String,
+    reasoning: bool,
     thinking: bool,
 }
 
 impl OllamaClient {
-    pub fn new(host: String, port: u16, model: String) -> Self {
+    pub fn new(host: String, port: u16, model: String, reasoning: bool) -> Self {
         let url = format!("http://{host}");
         Self {
             inner: Ollama::new(url, port),
             model,
+            reasoning,
             thinking: false,
         }
     }

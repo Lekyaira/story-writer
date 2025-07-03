@@ -17,4 +17,7 @@ pub struct Cli {
     /// Path to an idea file to load
     #[arg(long)]
     pub idea: Option<PathBuf>,
+    /// Enable reasoning (overrides OLLAMA_REASONING)
+    #[arg(long)]
+    pub reasoning: Option<bool>,
 } 

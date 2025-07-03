@@ -6,6 +6,7 @@ pub struct Config {
     pub host: String,
     pub port: u16,
     pub model: String,
+    pub reasoning: bool,
 }
 
 impl Config {
@@ -15,11 +16,13 @@ impl Config {
         let host = env::var("OLLAMA_HOST")?;
         let port: u16 = env::var("OLLAMA_PORT")?.parse()?;
         let model = env::var("OLLAMA_MODEL")?;
-        Ok(Self { host, port, model })
+        let reasoning = env::var("OLLAMA_REASONING")
+            .map_or(false, |v| v == "true");
+        Ok(Self { host, port, model, reasoning })
     }
 
     /// Load configuration, allowing CLI overrides for host, port, and model.
-    pub fn load_with_overrides(host: Option<String>, port: Option<u16>, model: Option<String>) -> Self {
+    pub fn load_with_overrides(host: Option<String>, port: Option<u16>, model: Option<String>, reasoning: Option<bool>) -> Self {
         dotenvy::dotenv().ok();
         let host = host.or_else(|| env::var("OLLAMA_HOST").ok())
             .unwrap_or_else(|| Self::exit_with_msg("OLLAMA_HOST"));
@@ -27,7 +30,9 @@ impl Config {
             .unwrap_or_else(|| Self::exit_with_msg("OLLAMA_PORT"));
         let model = model.or_else(|| env::var("OLLAMA_MODEL").ok())
             .unwrap_or_else(|| Self::exit_with_msg("OLLAMA_MODEL"));
-        Self { host, port, model }
+        let reasoning = reasoning.unwrap_or(env::var("OLLAMA_REASONING")
+            .map_or(false, |v| v == "true"));
+        Self { host, port, model, reasoning }
     }
 
     fn exit_with_msg(var: &str) -> ! {

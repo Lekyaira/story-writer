@@ -25,10 +25,10 @@ async fn main() -> Result<(), String> {
     let idea_contents = read_idea(cli.idea).unwrap();
 
     // Load configuration
-    let cfg = config::Config::load_with_overrides(cli.host, cli.port, cli.model);
+    let cfg = config::Config::load_with_overrides(cli.host, cli.port, cli.model, cli.reasoning);
 
     // Initialize Ollama client
-    let mut client = ollama_client::OllamaClient::new(cfg.host.clone(), cfg.port, cfg.model);
+    let mut client = ollama_client::OllamaClient::new(cfg.host.clone(), cfg.port, cfg.model, cfg.reasoning);
 
     // Initialize agent
     let mut agent = agent::Agent::new(client);
@@ -40,7 +40,7 @@ async fn main() -> Result<(), String> {
         let mut characters = agent.parse_characters(idea_contents.clone()).await?;
         println!("Found the following characters:");
         for character in characters.iter() {
-            println!("\t{}", character.name);
+            println!("   {}", character.name);
         }
         // Fill out each character's information
         for character in characters.iter_mut() {
